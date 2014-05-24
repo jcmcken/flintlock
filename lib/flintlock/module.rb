@@ -42,22 +42,22 @@ module Flintlock
 
     def stage(app_dir)
       @log.debug("running stage stage: #{@stage_script}")
-      run_script(@stage_script)
+      run_script(@stage_script, app_dir)
     end
     
     def modify(app_dir)
       @log.debug("running modify stage: #{@modify_script}")
-      run_script(@modify_script)
+      run_script(@modify_script, app_dir)
     end
   
     def start(app_dir)
       @log.debug("running start stage: #{@start_script}")
-      run_script(@start_script)
+      run_script(@start_script, app_dir)
     end
     
     def stop(app_dir)
       @log.debug("running stop stage: #{@stop_script}")
-      run_script(@stop_script)
+      run_script(@stop_script, app_dir)
     end
 
     def deploy(app_dir)

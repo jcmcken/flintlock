@@ -1,0 +1,6 @@
+#!/bin/bash -e
+
+APP_DIR=$1
+
+kill $(cat $APP_DIR/run/redis.pid)
+rm $APP_DIR/run/redis.pid

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+APP_DIR=$1
+
+mkdir -p $APP_DIR/{etc,log,data,run,bin}
+
+cat << EOF > $APP_DIR/etc/redis.conf
+daemonize yes
+logfile $APP_DIR/log/redis.log
+pidfile $APP_DIR/run/redis.pid
+dir $APP_DIR/data
+vm-swap-file $APP_DIR/data/redis.swap
+EOF
+
+cat << EOF > $APP_DIR/bin/redis
+/usr/sbin/redis-server $APP_DIR/etc/redis.conf
+EOF
+
+chmod 755 $APP_DIR/bin/redis
