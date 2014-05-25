@@ -8,19 +8,26 @@ module Flintlock
     desc "deploy MODULE DIRECTORY", "deploy a flintlock module MODULE to DIRECTORY"
     method_option :debug, :type => :boolean, :description => "enable debug output", :default => false
     def deploy(uri, app_dir)
+      say_status "run", "fetching module", :magenta
       mod = get_module(uri, options)
       say_status "info", "deploying #{mod.full_name} to '#{app_dir}'", :blue
       say_status "create", "creating deploy directory"
       mod.create_app_dir(app_dir) rescue abort("deploy directory is not empty")
-      say_status "run", "installing and configuring dependencies", :magenta
-      mod.prepare
-      say_status "create", "staging application files"
-      mod.stage(app_dir)
-      say_status "run", "launching the application", :magenta
-      mod.start(app_dir)
-      say_status "run", "altering application runtime environment", :magenta
-      mod.modify(app_dir)
-      say_status "info", "complete!", :blue
+
+      begin
+        say_status "run", "installing and configuring dependencies", :magenta
+        mod.prepare
+        say_status "create", "staging application files"
+        mod.stage(app_dir)
+        say_status "run", "launching the application", :magenta
+        mod.start(app_dir)
+        say_status "run", "altering application runtime environment", :magenta
+        mod.modify(app_dir)
+        say_status "info", "complete!", :blue
+      rescue Errno::EACCES => e
+        abort("#{e.message.gsub(/Permission denied/, 'permission denied')}")
+      end
+    end
     end
 
     private
