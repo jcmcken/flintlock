@@ -30,6 +30,8 @@ module Flintlock
         Flintlock::Module.new(uri, options)
       rescue InvalidModule => e
         abort("invalid flintlock module '#{e}'")
+      rescue UnsupportedModuleURI => e
+        abort("don't know how to download '#{e}'!")
       end
     end
 
