@@ -46,5 +46,8 @@ module Flintlock
       "#{author}/#{name} (#{version})"
     end
 
+    def self.empty
+      {"author" => "", "version" => "", "name" => ""}.to_json
+    end
   end
 end
