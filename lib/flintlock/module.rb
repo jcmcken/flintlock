@@ -1,5 +1,6 @@
 require 'flintlock/metadata'
 require 'flintlock/logger'
+require 'flintlock/util'
 require 'open3'
 require 'fileutils'
 require 'logger'
@@ -50,7 +51,7 @@ module Flintlock
       @metadata.full_name
     end
 
-    def script_names
+    def self.script_names
       ['defaults', 'modify', 'prepare', 'stage', 'start', 'stop']
     end
 
@@ -63,8 +64,7 @@ module Flintlock
     end
 
     def valid?
-      @metadata.valid?
-      scripts_exist?
+      @metadata.valid? && scripts_exist?
     end
 
     def prepare
@@ -103,19 +103,19 @@ module Flintlock
 
     def create_app_dir(app_dir)
       FileUtils.mkdir_p(app_dir)
-      raise if ! Dir[File.join(app_dir, '*')].empty?
+      raise if ! Util.empty_directory?(app_dir)
     end
 
     private
 
     def load_scripts!
-      script_names.map do |x|
+      Module.script_names.map do |x|
         instance_variable_set("@#{x}_script".to_sym, File.join(@root_dir, 'bin', x))
       end
     end
 
     def validate
-      raise InvalidModule.new(uri) if ! valid?
+      raise InvalidModule.new(@uri) if ! valid?
     end
 
     def load_logger

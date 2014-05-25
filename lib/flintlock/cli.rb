@@ -28,6 +28,19 @@ module Flintlock
         abort("#{e.message.gsub(/Permission denied/, 'permission denied')}")
       end
     end
+
+    desc "new [DIRECTORY]", "generate a new, minimal flintlock module"
+    def new(directory = Dir.pwd)
+      abort("directory isn't empty!") if ! Util.empty_directory?(directory)
+      inside(directory) do
+        empty_directory "bin"
+        inside("bin") do
+          Module.script_names.each do |script|
+            create_file script
+          end
+        end 
+        create_file(Metadata.filename, Metadata.empty)
+      end
     end
 
     private
