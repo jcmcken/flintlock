@@ -9,17 +9,18 @@ module Flintlock
     method_option :debug, :type => :boolean, :description => "enable debug output", :default => false
     def deploy(uri, app_dir)
       mod = get_module(uri, options)
-      say_status "deploy", "#{mod.full_name} to '#{app_dir}'"
+      say_status "info", "deploying #{mod.full_name} to '#{app_dir}'", :blue
       say_status "create", "creating deploy directory"
       mod.create_app_dir(app_dir) rescue abort("deploy directory is not empty")
-      say_status "prepare", "installing and configuring dependencies"
+      say_status "run", "installing and configuring dependencies", :magenta
       mod.prepare
-      say_status "stage", "staging application files"
+      say_status "create", "staging application files"
       mod.stage(app_dir)
-      say_status "start", "launching the application"
+      say_status "run", "launching the application", :magenta
       mod.start(app_dir)
-      say_status "modify", "altering application runtime environment"
+      say_status "run", "altering application runtime environment", :magenta
       mod.modify(app_dir)
+      say_status "info", "complete!", :blue
     end
 
     private
