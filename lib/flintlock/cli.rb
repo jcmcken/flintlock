@@ -32,6 +32,8 @@ module Flintlock
         abort("invalid flintlock module '#{e}'")
       rescue UnsupportedModuleURI => e
         abort("don't know how to download '#{e}'!")
+      rescue ModuleDownloadError => e
+        abort("failed to download '#{e}'")
       end
     end
 
