@@ -12,7 +12,7 @@ are called "modules".
 
 ``flintlock`` modules are simply a bunch of scripts which follow a certain convention.
 
-At its heart, a module has the following layout:
+At its heart, a module has the following minimal layout:
 
 ```text
 sample-app-1
@@ -44,6 +44,8 @@ The ``metadata.json`` file contains metadata about the module. This metadata loo
 All three keys (``author``, ``name``, ``version``) are required, but can be any value. These
 metadata are merely used to namespace the module.
 
+``flintlock`` developers can choose to include more files in their modules if needed.
+
 ### Stages
 
 ``flintlock`` has different "stages" of execution that occur in a specific order every time
@@ -55,10 +57,11 @@ The most important stages, and their purpose, are as follows:
 * ``stage``: Stage the application directories and files. This script takes a single argument,
   which is the directory where your app will be deployed. This directory need not exist, but if
   it does, it must be empty.
-* ``start``: Start the application.
+* ``start``: Start the application. This script takes the same argument passed to ``stage``.
 * ``modify``: Once the application is started, perform some runtime modifications. For instance,
   if you've just started a MySQL server, you may want to remove the default tables or add a 
-  password to the database superuser.
+  password to the database superuser. This script takes the same argument passed to ``stage``
+  and ``start``.
 
 The API between these scripts and ``flintlock`` is as follows:
 
@@ -95,3 +98,7 @@ PORT=8080 flintlock deploy <module> <deploy_dir>
 
 ``flintlock`` will transparently override the default ``PORT`` with the env var passed at the
 command line.
+
+### Examples
+
+An example ``flintlock`` module can be found @ http://github.com/jcmcken/flintlock-redis.git.
