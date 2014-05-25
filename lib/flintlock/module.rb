@@ -4,16 +4,25 @@ require 'open3'
 require 'fileutils'
 require 'logger'
 require 'shellwords'
+require 'uri'
 
 module Flintlock
   class InvalidModule < RuntimeError; end
-  class Module
-    attr_reader :root_dir, :metadata
+  class UnsupportedModuleURI < RuntimeError; end
+  class ModuleDownloadError < RuntimeError; end
 
-    def initialize(root_dir = nil, options={})
+  class Module
+    attr_reader :uri, :metadata
+
+    def initialize(uri = nil, options={})
       @debug = !!options[:debug]
-      @root_dir = root_dir || Dir.pwd
-      @metadata = Metadata.new(File.join(@root_dir, Metadata.filename))
+      @uri = uri || Dir.pwd
+      @root_dir = download_from_uri(@uri)
+      begin
+        @metadata = Metadata.new(File.join(@root_dir, Metadata.filename)) 
+      rescue Errno::ENOENT
+        raise InvalidModule, uri
+      end
       @log = Logger.new(STDOUT)
 
       @log.silence! if ! @debug
@@ -22,13 +31,32 @@ module Flintlock
         instance_variable_set("@#{x}_script".to_sym, File.join(@root_dir, 'bin', x))
       end
 
-      raise InvalidModule.new(root_dir) if ! valid?
+      raise InvalidModule.new(uri) if ! valid?
 
       @env = default_env
       @log.debug("defaults script is #{@defaults_script}")
       @log.debug("env is #{@env.inspect}")
     end
 
+    def download_from_uri(uri)
+      case URI.parse(uri).scheme
+      when nil # no scheme == local file
+        uri
+      when 'git'
+        handle_git_uri(uri)
+      else
+        raise UnsupportedModuleURI, uri
+      end
+    end
+
+    def handle_git_uri(uri)
+      root_dir = Dir.mktmpdir
+      command = Shellwords.join(['git', 'clone', uri, root_dir])
+      stdout, stderr, status = Open3.capture3(command)
+      raise ModuleDownloadError, uri if status.exitstatus != 0 
+      root_dir
+    end
+    
     def full_name
       @metadata.full_name
     end
