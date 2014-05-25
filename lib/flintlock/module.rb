@@ -16,6 +16,10 @@ module Flintlock
       script_names.map do |x|
         instance_variable_set("@#{x}_script".to_sym, File.join(@root_dir, 'bin', x))
       end
+
+      @env = default_env
+      @log.debug("defaults script is #{@defaults_script}")
+      @log.debug("env is #{@env.inspect}")
     end
 
     def script_names
@@ -23,7 +27,7 @@ module Flintlock
     end
 
     def scripts
-      [@modify_script, @prepare_script, @stage_script, @start_script, @stop_script]
+      [@modify_script, @prepare_script, @stage_script, @start_script, @stop_script, @defaults_script]
     end
 
     def scripts_exist?
@@ -68,10 +72,16 @@ module Flintlock
       modify(app_dir)
     end
 
+    def default_env
+      # hokey, but seems to work
+      env_data = %x{set -a && source #{@defaults_script} && env}.split.map{ |x| x.split('=', 2) }
+      Hash[env_data]
+    end
+
     private
 
     def run(command)
-      handle_run(*Open3.capture3(command))
+      handle_run(*Open3.capture3(@env, command))
     end
 
     def run_script(script, *args)

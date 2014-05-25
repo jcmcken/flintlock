@@ -10,6 +10,7 @@ logfile $APP_DIR/log/redis.log
 pidfile $APP_DIR/run/redis.pid
 dir $APP_DIR/data
 vm-swap-file $APP_DIR/data/redis.swap
+port $PORT
 EOF
 
 cat << EOF > $APP_DIR/bin/redis
