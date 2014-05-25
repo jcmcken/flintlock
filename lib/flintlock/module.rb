@@ -79,36 +79,28 @@ module Flintlock
     end
 
     def prepare
-      @log.debug("running prepare stage: #{@prepare_script}")
+      @log.info("running prepare stage: #{@prepare_script}")
       run_script(@prepare_script)
     end
 
     def stage(app_dir)
-      @log.debug("running stage stage: #{@stage_script}")
+      @log.info("running stage stage: #{@stage_script}")
       run_script(@stage_script, app_dir)
     end
     
     def modify(app_dir)
-      @log.debug("running modify stage: #{@modify_script}")
+      @log.info("running modify stage: #{@modify_script}")
       run_script(@modify_script, app_dir)
     end
   
     def start(app_dir)
-      @log.debug("running start stage: #{@start_script}")
+      @log.info("running start stage: #{@start_script}")
       run_script(@start_script, app_dir)
     end
     
     def stop(app_dir)
-      @log.debug("running stop stage: #{@stop_script}")
+      @log.info("running stop stage: #{@stop_script}")
       run_script(@stop_script, app_dir)
-    end
-
-    def deploy(app_dir)
-      create_app_dir(app_dir)
-      prepare
-      stage(app_dir)
-      start(app_dir)
-      modify(app_dir)
     end
 
     def default_env
@@ -135,7 +127,7 @@ module Flintlock
     def handle_run(stdout, stderr, status)
       case status.exitstatus
       when 0
-        stdout.lines.each { |x| @log.debug(x) }
+        stdout.lines.each { |x| @log.info(x) }
       when 1
         puts stderr
         raise 'script error'
