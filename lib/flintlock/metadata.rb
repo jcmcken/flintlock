@@ -43,5 +43,10 @@ module Flintlock
     def name
       @data.fetch('name')
     end
+
+    def full_name
+      "#{author}/#{name} (#{version})"
+    end
+
   end
 end

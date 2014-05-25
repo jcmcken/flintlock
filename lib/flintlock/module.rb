@@ -1,4 +1,5 @@
 require 'flintlock/metadata'
+require 'flintlock/logger'
 require 'open3'
 require 'fileutils'
 require 'logger'
@@ -9,10 +10,13 @@ module Flintlock
   class Module
     attr_reader :root_dir, :metadata
 
-    def initialize(root_dir = nil)
+    def initialize(root_dir = nil, options={})
+      @debug = !!options[:debug]
       @root_dir = root_dir || Dir.pwd
       @metadata = Metadata.new(File.join(@root_dir, Metadata.filename))
       @log = Logger.new(STDOUT)
+
+      @log.silence! if ! @debug
 
       script_names.map do |x|
         instance_variable_set("@#{x}_script".to_sym, File.join(@root_dir, 'bin', x))
@@ -23,6 +27,10 @@ module Flintlock
       @env = default_env
       @log.debug("defaults script is #{@defaults_script}")
       @log.debug("env is #{@env.inspect}")
+    end
+
+    def full_name
+      @metadata.full_name
     end
 
     def script_names
@@ -81,6 +89,11 @@ module Flintlock
       Hash[env_data]
     end
 
+    def create_app_dir(app_dir)
+      FileUtils.mkdir_p(app_dir)
+      raise if ! Dir[File.join(app_dir, '*')].empty?
+    end
+
     private
 
     def run(command)
@@ -94,7 +107,7 @@ module Flintlock
     def handle_run(stdout, stderr, status)
       case status.exitstatus
       when 0
-        puts stdout
+        stdout.lines.each { |x| @log.debug(x) }
       when 1
         puts stderr
         raise 'script error'
@@ -102,11 +115,6 @@ module Flintlock
         puts stderr
         raise 'internal error'
       end
-    end
-
-    def create_app_dir(app_dir)
-      FileUtils.mkdir_p(app_dir)
-      raise if ! Dir[File.join(app_dir, '*')].empty?
     end
   end
 end
