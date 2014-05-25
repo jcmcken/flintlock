@@ -49,9 +49,11 @@ metadata are merely used to namespace the module.
 ### Stages
 
 ``flintlock`` has different "stages" of execution that occur in a specific order every time
-you run a deployment. These stages correspond directly to the scripts under ``bin/``.
+you run a deployment.
 
-The most important stages, and their purpose, are as follows:
+These stages correspond directly to the scripts under ``bin/``.
+
+The most important stages, and their purpose, are as follows. (The stages occur in the order listed below)
 
 * ``prepare``: Install or compile any required dependencies. This script takes no arguments.
 * ``stage``: Stage the application directories and files. This script takes a single argument,
