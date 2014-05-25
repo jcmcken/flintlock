@@ -15,13 +15,11 @@ module Flintlock
 
     def valid?
       begin
-        author
-        version
-        name
+        result = ! [author, version, name].map(&:empty?).any?
       rescue
-        return false
+        result = false
       end 
-      return true
+      return result
     end
 
     def default_metadata_file
