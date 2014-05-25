@@ -17,25 +17,14 @@ module Flintlock
     def initialize(uri = nil, options={})
       @debug = !!options[:debug]
       @uri = uri || Dir.pwd
+      @log = load_logger
       @root_dir = download_from_uri(@uri)
-      begin
-        @metadata = Metadata.new(File.join(@root_dir, Metadata.filename)) 
-      rescue Errno::ENOENT
-        raise InvalidModule, uri
-      end
-      @log = Logger.new(STDOUT)
+      @metadata = load_metadata
 
-      @log.silence! if ! @debug
+      load_scripts!
+      validate
 
-      script_names.map do |x|
-        instance_variable_set("@#{x}_script".to_sym, File.join(@root_dir, 'bin', x))
-      end
-
-      raise InvalidModule.new(uri) if ! valid?
-
-      @env = default_env
-      @log.debug("defaults script is #{@defaults_script}")
-      @log.debug("env is #{@env.inspect}")
+      @env = load_env(@defaults_script)
     end
 
     def download_from_uri(uri)
@@ -103,10 +92,13 @@ module Flintlock
       run_script(@stop_script, app_dir)
     end
 
-    def default_env
+    def load_env(defaults_script)
       # hokey, but seems to work
-      env_data = %x{set -a && source #{@defaults_script} && env}.split.map{ |x| x.split('=', 2) }
-      Hash[env_data]
+      env_data = %x{set -a && source #{defaults_script} && env}.split.map{ |x| x.split('=', 2) }
+      env = Hash[env_data]
+      @log.debug("defaults script is #{defaults_script}")
+      @log.debug("env is #{env.inspect}")
+      env
     end
 
     def create_app_dir(app_dir)
@@ -115,6 +107,30 @@ module Flintlock
     end
 
     private
+
+    def load_scripts!
+      script_names.map do |x|
+        instance_variable_set("@#{x}_script".to_sym, File.join(@root_dir, 'bin', x))
+      end
+    end
+
+    def validate
+      raise InvalidModule.new(uri) if ! valid?
+    end
+
+    def load_logger
+      log = Logger.new(STDOUT)
+      log.silence! if ! @debug
+      log
+    end
+
+    def load_metadata
+      begin
+        Metadata.new(File.join(@root_dir, Metadata.filename)) 
+      rescue Errno::ENOENT
+        raise InvalidModule, uri
+      end
+    end
 
     def run(command)
       handle_run(*Open3.capture3(@env, command))
