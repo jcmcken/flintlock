@@ -26,7 +26,7 @@ sample-app-1
 `-- metadata.json
 ```
 
-The top-level directory (in this case, ``sample-app-``) can be called anything.
+The top-level directory (in this case, ``sample-app-1``) can be called anything. 
 
 The files under ``bin`` are executable scripts (using any language you care to use). All
 of these scripts must exist, but they need not do anything. More on these later.
