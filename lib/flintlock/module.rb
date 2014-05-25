@@ -5,6 +5,7 @@ require 'logger'
 require 'shellwords'
 
 module Flintlock
+  class InvalidModule < RuntimeError; end
   class Module
     attr_reader :root_dir, :metadata
 
@@ -16,6 +17,8 @@ module Flintlock
       script_names.map do |x|
         instance_variable_set("@#{x}_script".to_sym, File.join(@root_dir, 'bin', x))
       end
+
+      raise InvalidModule.new(root_dir) if ! valid?
 
       @env = default_env
       @log.debug("defaults script is #{@defaults_script}")
