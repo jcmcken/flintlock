@@ -13,7 +13,7 @@ are running on a CentOS 6 machine with access to the EPEL package repository.
 
 After installing ``flintlock``, run the following:
 
-```bash
+```shell-session
 flintlock deploy git://github.com/jcmcken/flintlock-redis.git /some/empty/directory
 ```
 
@@ -22,7 +22,7 @@ It will clone the remote repository, stage it, and then begin deploying the nece
 files and directories to ``/some/empty/directory``. Let's see what happens:
 
 
-```bash
+```shell-session
 $ flintlock deploy git://github.com/jcmcken/flintlock-redis.git /some/empty/directory
          run  fetching module
         info  deploying jcmcken/redis (0.0.1) to '/some/empty/directory'
@@ -38,7 +38,7 @@ $
 Assuming the module was written well enough, these messages should indicate that our
 ``redis`` server is running. Let's verify:
 
-```bash
+```shell-session
 $ ps -ef | grep redis
 jcmcken  24846     1  0 17:41 ?        00:00:00 /usr/sbin/redis-server /some/empty/directory/etc/redis.conf
 jcmcken  24865 19343  0 17:41 pts/1    00:00:00 grep redis
@@ -46,7 +46,7 @@ jcmcken  24865 19343  0 17:41 pts/1    00:00:00 grep redis
 
 Let's take a look at the deploy directory, ``/some/empty/directory``:
 
-```bash
+```shell-session
 $ tree /some/empty/directory
 /some/empty/directory
 |-- bin
@@ -162,7 +162,7 @@ PORT=80
 
 The user can override this at the command line by running:
 
-```
+```shell-session
 PORT=8080 flintlock deploy <module> <deploy_dir>
 ```
 
