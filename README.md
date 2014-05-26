@@ -95,7 +95,7 @@ is usually acceptable. But all of the important files should really be located t
 Currently ``flintlock`` can install modules from a number of sources. In addition to
 local directories, ``flintlock`` supports the following protocols/formats:
 
-* ``git`
+* ``git``
 * ``tar`` or ``tar.gz`` over ``http``/``https``
 
 Attempting to install any other way will throw an error message similar to the following:
