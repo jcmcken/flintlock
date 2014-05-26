@@ -46,6 +46,7 @@ module Flintlock
       when 'git'
         handle_git_uri(uri)
       when 'http', 'https'
+        raise UnsupportedModuleURI.new(uri) if ! Util.supported_archive?(uri)
         # over these protocols, we're getting an archive
         handle_archive(handle_http_uri(uri))
       else
@@ -77,6 +78,8 @@ module Flintlock
         end
       end
       tmpfile
+    rescue OpenURI::HTTPError
+      raise ModuleDownloadError, uri
     end
 
     def handle_archive(filename)

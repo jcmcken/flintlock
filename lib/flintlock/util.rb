@@ -9,7 +9,7 @@ module Flintlock
     end
   
     def self.supported_archive?(filename)
-      Module.supported_archives.contains?(full_extname(filename))
+      Util.supported_archives.include?(full_extname(filename))
     end
   
     def self.full_extname(filename)
