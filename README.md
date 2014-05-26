@@ -6,6 +6,71 @@ At its core, it's a simple scripting API which allows developers/ops the ability
 to create re-usable application deployments. In ``flintlock``, these deployments 
 are called "modules".
 
+## Tutorial
+
+Let's deploy a sample ``redis`` module I've written. This tutorial assumes you 
+are running on a CentOS 6 machine with access to the EPEL package repository.
+
+After installing ``flintlock``, run the following:
+
+```bash
+flintlock deploy git://github.com/jcmcken/flintlock-redis.git /some/empty/directory
+```
+
+In this case, the ``deploy`` command will recognize that you want to deploy from ``git``.
+It will clone the remote repository, stage it, and then begin deploying the necessary
+files and directories to ``/some/empty/directory``. Let's see what happens:
+
+
+```bash
+$ flintlock deploy git://github.com/jcmcken/flintlock-redis.git /some/empty/directory
+         run  fetching module
+        info  deploying jcmcken/redis (0.0.1) to '/some/empty/directory'
+      create  creating deploy directory
+         run  installing and configuring dependencies
+      create  staging application files
+         run  launching the application
+         run  altering application runtime environment
+        info  complete!
+$
+```
+
+Assuming the module was written well enough, these messages should indicate that our
+``redis`` server is running. Let's verify:
+
+```bash
+$ ps -ef | grep redis
+jcmcken  24846     1  0 17:41 ?        00:00:00 /usr/sbin/redis-server /some/empty/directory/etc/redis.conf
+jcmcken  24865 19343  0 17:41 pts/1    00:00:00 grep redis
+```
+
+Let's take a look at the deploy directory, ``/some/empty/directory``:
+
+```bash
+$ tree /some/empty/directory
+/some/empty/directory
+|-- bin
+|   `-- redis
+|-- data
+|-- etc
+|   `-- redis.conf
+|-- log
+|   |-- redis.log
+|   |-- stderr.log
+|   `-- stdout.log
+`-- run
+    `-- redis.pid
+```
+
+You'll notice that everything for this ``redis`` server is self-contained within our deploy
+directory. This is a central tenet of ``flintlock``:
+
+**An application deployment is always self-contained within a single directory**
+
+How well an application adheres to this philosophy depends on the application. For instance,
+some applications may not have configurable ``/tmp`` directories. For transient data, this
+is usually acceptable. But all of the important files should really be located together.
+
 ## Writing a Module
 
 ### Introduction
@@ -25,6 +90,9 @@ sample-app-1
 |   `-- stop
 `-- metadata.json
 ```
+
+Running ``flintlock new`` in an empty directory of your choosing will automatically
+generate this structure.
 
 The top-level directory (in this case, ``sample-app-1``) can be called anything. 
 
