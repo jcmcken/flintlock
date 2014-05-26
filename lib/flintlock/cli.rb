@@ -5,7 +5,7 @@ module Flintlock
   class Cli < Thor
     include Thor::Actions
 
-    desc "deploy MODULE DIRECTORY", "deploy a flintlock module MODULE to DIRECTORY"
+    desc "deploy MODULE DIRECTORY", "Deploy a flintlock module MODULE to DIRECTORY"
     method_option :debug, :type => :boolean, :description => "enable debug output", :default => false
     def deploy(uri, app_dir)
       say_status "run", "fetching module", :magenta
@@ -29,7 +29,7 @@ module Flintlock
       end
     end
 
-    desc "new [DIRECTORY]", "generate a new, minimal flintlock module"
+    desc "new [DIRECTORY]", "Generate a new, minimal flintlock module"
     def new(directory = Dir.pwd)
       abort("directory isn't empty!") if ! Util.empty_directory?(directory)
       inside(directory) do
