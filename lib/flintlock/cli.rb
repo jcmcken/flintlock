@@ -26,6 +26,8 @@ module Flintlock
         say_status "info", "complete!", :blue
       rescue Errno::EACCES => e
         abort("#{e.message.gsub(/Permission denied/, 'permission denied')}")
+      rescue RunFailure
+        abort('stage failed!')
       end
     end
 

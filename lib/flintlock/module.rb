@@ -11,6 +11,7 @@ module Flintlock
   class InvalidModule < RuntimeError; end
   class UnsupportedModuleURI < RuntimeError; end
   class ModuleDownloadError < RuntimeError; end
+  class RunFailure < RuntimeError; end
 
   class Module
     attr_reader :uri, :metadata
@@ -141,15 +142,10 @@ module Flintlock
     end
 
     def handle_run(stdout, stderr, status)
-      case status.exitstatus
-      when 0
-        stdout.lines.each { |x| @log.info(x) }
-      when 1
-        puts stderr
-        raise 'script error'
-      else
-        puts stderr
-        raise 'internal error'
+      stdout.lines.each { |x| @log.info(x) }
+      if status.exitstatus != 0
+        stderr.lines.each { |x| @log.error(x) }
+        raise RunFailure
       end
     end
   end
