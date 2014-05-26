@@ -93,12 +93,18 @@ module Flintlock
       run_script(@stop_script, app_dir)
     end
 
+    def current_env
+      Hash[ENV.to_a] # get rid of ENV obj
+    end
+
     def load_env(defaults_script)
       # hokey, but seems to work
       env_data = %x{set -a && source #{defaults_script} && env}.split.map{ |x| x.split('=', 2) }
       env = Hash[env_data]
       @log.debug("defaults script is #{defaults_script}")
-      @log.debug("env is #{env.inspect}")
+      @log.debug("defaults env is #{env.inspect}")
+      env = env.merge(current_env)
+      @log.debug("merged env is #{env.inspect}")
       env
     end
 
