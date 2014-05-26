@@ -6,7 +6,7 @@
 
 Summary: A simple application deployer
 Name: %{?scl_prefix}rubygem-%{gem_name}
-Version: 0.0.1
+Version: 0.1.0
 Release: 1%{?dist}
 Group: Development/Languages
 License: MIT
@@ -70,10 +70,22 @@ Requires: %{?scl_prefix}rubygem(flintlock)
 %description -n flintlock
 A simple application deployer inspired by Heroku's buildpacks.
 
+%package doc
+Summary: Documentation for %{pkg_name}
+Group: Documentation
+Requires:%{?scl_prefix}%{pkg_name} = %{epoch}:%{version}-%{release}
+
+%description doc
+Documentation for %{pkg_name}
+
+
 %files -n flintlock
 %if %{?scl:1}%{!?scl:0}
 %attr(0755,root,root) %{_root_bindir}/flintlock
 %endif
+
+%files doc
+%doc %{gem_docdir}
 
 %files
 %dir %{gem_instdir}
@@ -84,7 +96,8 @@ A simple application deployer inspired by Heroku's buildpacks.
 %{gem_dir}/specifications/%{gem_name}-%{version}.gemspec
 %doc %{gem_instdir}/README.md
 %doc %{gem_instdir}/CHANGES.md
+%doc %{gem_instdir}/LICENSE
 
 %changelog
-* Mon May 26 2014 Jon McKenzie - 0.0.1-1
+* Mon May 26 2014 Jon McKenzie - 0.1.0-1
 - Initial package

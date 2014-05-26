@@ -6,10 +6,29 @@ At its core, it's a simple scripting API which allows developers/ops the ability
 to create re-usable application deployments. In ``flintlock``, these deployments 
 are called "modules".
 
+## Installation
+
+The latest release of ``flintlock`` will be published to ``rubygems.org``. To install,
+just run:
+
+```console
+$ gem install flintlock
+```
+
+If you're running on a RHEL/CentOS 6 machine (or derivative), you might be able to
+make use of the ``flintlock`` RPM spec file located in the git repository 
+(``flintlock.spec``) to build RPM packages. Assuming all of the dependencies are
+installed, this should just be a matter of running:
+
+```console
+$ rpmbuild -ba flintlock.spec --define "scl ruby193"
+```
+
 ## Tutorial
 
 Let's deploy a sample ``redis`` module I've written. This tutorial assumes you 
 are running on a CentOS 6 machine with access to the EPEL package repository.
+You'll also need ``git``.
 
 After installing ``flintlock``, run the following:
 
@@ -70,6 +89,21 @@ directory. This is a central tenet of ``flintlock``:
 How well an application adheres to this philosophy depends on the application. For instance,
 some applications may not have configurable ``/tmp`` directories. For transient data, this
 is usually acceptable. But all of the important files should really be located together.
+
+## Supported Formats
+
+Currently ``flintlock`` can install modules from a number of sources. In addition to
+local directories, ``flintlock`` supports the following protocols/formats:
+
+* ``git`
+* ``tar`` or ``tar.gz`` over ``http``/``https``
+
+Attempting to install any other way will throw an error message similar to the following:
+
+```console
+         run  fetching module
+       error  don't know how to download 'https://github.com'!
+```
 
 ## Writing a Module
 
