@@ -6,6 +6,9 @@ require 'fileutils'
 require 'logger'
 require 'shellwords'
 require 'uri'
+require 'tmpdir'
+require 'tempfile'
+require 'open-uri'
 
 module Flintlock
   class InvalidModule < RuntimeError; end
@@ -17,6 +20,12 @@ module Flintlock
     attr_reader :uri, :metadata
 
     def initialize(uri = nil, options={})
+      # track temporary files and directories for deletion
+      @tmpfiles = []
+     
+      # destroy tmp files on exit 
+      at_exit { handle_exit }
+
       @debug = !!options[:debug]
       @uri = uri || Dir.pwd
       @log = load_logger
@@ -27,6 +36,7 @@ module Flintlock
       validate
 
       @env = load_env(@defaults_script)
+
     end
 
     def download_from_uri(uri)
@@ -35,19 +45,56 @@ module Flintlock
         uri
       when 'git'
         handle_git_uri(uri)
+      when 'http', 'https'
+        # over these protocols, we're getting an archive
+        handle_archive(handle_http_uri(uri))
       else
         raise UnsupportedModuleURI, uri
       end
     end
 
+    def handle_exit
+      @tmpfiles.each { |x| FileUtils.rm_rf(x, :secure => true) }
+    end
+
     def handle_git_uri(uri)
       root_dir = Dir.mktmpdir
+      @tmpfiles << root_dir
       command = Shellwords.join(['git', 'clone', uri, root_dir])
       stdout, stderr, status = Open3.capture3(command)
       raise ModuleDownloadError, uri if status.exitstatus != 0 
       root_dir
     end
-    
+
+    def handle_http_uri(uri, buffer=8192)
+      tmpfile = Tempfile.new(['flintlock', Util.full_extname(uri)]).path
+      @tmpfiles << tmpfile
+      open(uri) do |input|
+        open(tmpfile, 'wb') do |output|
+          while ( buf = input.read(buffer))
+            output.write buf
+          end
+        end
+      end
+      tmpfile
+    end
+
+    def handle_archive(filename)
+      tmpdir = Dir.mktmpdir
+      @tmpfiles << tmpdir
+      case filename
+      when /\.tar\.gz$/
+        command = ['tar', 'xfz', filename, '-C', tmpdir]
+      when /\.tar$/
+        command = ['tar', 'xf', filename, '-C', tmpdir]
+      else
+        raise UnsupportedModuleURI, filename
+      end
+      _, _, status = Open3.capture3(Shellwords.join(command))
+      raise ModuleDownloadError if status.exitstatus != 0
+      tmpdir
+    end
+
     def full_name
       @metadata.full_name
     end
