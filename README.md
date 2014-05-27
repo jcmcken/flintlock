@@ -205,4 +205,7 @@ command line.
 
 ### Examples
 
-An example ``flintlock`` module can be found @ http://github.com/jcmcken/flintlock-redis.git.
+Some example ``flintlock`` modules can be found @ the following locations:
+
+* http://github.com/jcmcken/flintlock-redis.git
+* http://github.com/jcmcken/flintlock-tomcat.git
