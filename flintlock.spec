@@ -1,8 +1,8 @@
-%{?scl:%scl_package rubygem-%{gem_name}}
-%{!?scl:%global pkg_name %{name}}
-
 %global gem_name flintlock
 %global rubyabi 1.9.1
+
+%{?scl:%scl_package rubygem-%{gem_name}}
+%{!?scl:%global pkg_name %{name}}
 
 Summary: A simple application deployer
 Name: %{?scl_prefix}rubygem-%{gem_name}
@@ -19,6 +19,7 @@ Requires: %{?scl_prefix}rubygem(json)
 Requires: tar
 Requires: git
 Requires: gzip
+BuildRequires: scl-utils-build
 BuildRequires: %{?scl_prefix}ruby(abi) = %{rubyabi}
 BuildRequires: %{?scl_prefix}ruby(rubygems) 
 BuildRequires: %{?scl_prefix}rubygems-devel
