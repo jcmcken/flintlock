@@ -8,6 +8,7 @@ module Flintlock
     desc "deploy MODULE DIRECTORY", "Deploy a flintlock module MODULE to DIRECTORY"
     method_option :debug, :type => :boolean, :description => "enable debug output", :default => false
     def deploy(uri, app_dir)
+      app_dir = File.expand_path(app_dir)
       say_status "run", "fetching module", :magenta
       mod = get_module(uri, options)
       say_status "info", "deploying #{mod.full_name} to '#{app_dir}'", :blue
