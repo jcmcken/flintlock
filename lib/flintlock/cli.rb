@@ -40,6 +40,7 @@ module Flintlock
         inside("bin") do
           Module.script_names.each do |script|
             create_file script
+            chmod script, 0755, :verbose => false
           end
         end 
         create_file(Metadata.filename, Metadata.empty)
