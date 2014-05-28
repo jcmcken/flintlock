@@ -23,5 +23,13 @@ module Flintlock
       end
       data.reverse.join
     end
+
+    def self.which(command)
+      ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+        exe = File.join(path, command)
+        return exe if File.executable?(exe)
+      end
+      nil
+    end
   end
 end

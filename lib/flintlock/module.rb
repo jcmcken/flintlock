@@ -15,6 +15,7 @@ module Flintlock
   class UnsupportedModuleURI < RuntimeError; end
   class ModuleDownloadError < RuntimeError; end
   class RunFailure < RuntimeError; end
+  class DependencyError < RuntimeError; end
 
   class Module
     attr_reader :uri, :metadata
@@ -63,6 +64,7 @@ module Flintlock
     end
 
     def handle_git_uri(uri)
+      raise DependencyError.new('git') if Util.which('git').nil?
       root_dir = Dir.mktmpdir
       @tmpfiles << root_dir
       command = Shellwords.join(['git', 'clone', uri, root_dir])

@@ -66,6 +66,8 @@ module Flintlock
         abort("don't know how to download '#{e}'!")
       rescue ModuleDownloadError => e
         abort("failed to download '#{e}'")
+      rescue DependencyError => e
+        abort("missing dependency: no such command '#{e}'")
       rescue Interrupt
         abort("interrupted by user")
       end
