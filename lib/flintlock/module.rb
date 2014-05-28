@@ -41,8 +41,8 @@ module Flintlock
     end
 
     def download_from_uri(uri)
-      case URI.parse(uri).scheme
-      when nil # no scheme == local file
+      case URI.parse(uri).scheme.split('+', 0)[0]
+      when nil, 'file' # no scheme == local file
         if Util.supported_archive?(uri)
           handle_archive(uri)
         else
