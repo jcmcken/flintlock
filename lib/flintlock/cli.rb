@@ -66,6 +66,8 @@ module Flintlock
         abort("don't know how to download '#{e}'!")
       rescue ModuleDownloadError => e
         abort("failed to download '#{e}'")
+      rescue Interrupt
+        abort("interrupted by user")
       end
     end
 
