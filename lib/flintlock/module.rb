@@ -42,7 +42,11 @@ module Flintlock
     def download_from_uri(uri)
       case URI.parse(uri).scheme
       when nil # no scheme == local file
-        uri
+        if Util.supported_archive?(uri)
+          handle_archive(uri)
+        else
+          uri
+        end
       when 'git'
         handle_git_uri(uri)
       when 'http', 'https'

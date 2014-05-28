@@ -92,10 +92,11 @@ is usually acceptable. But all of the important files should really be located t
 
 ## Supported Formats
 
-Currently ``flintlock`` can install modules from a number of sources. In addition to
-local directories, ``flintlock`` supports the following protocols/formats:
+Currently ``flintlock`` can install modules from a number of sources:
 
-* ``git``
+* From a local directory
+* From a local tarball (``tar`` or ``tar.gz``)
+* Over the ``git`` protocol
 * ``tar`` or ``tar.gz`` over ``http``/``https``
 
 Attempting to install any other way will throw an error message similar to the following:
