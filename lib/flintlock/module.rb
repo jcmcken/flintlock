@@ -193,8 +193,28 @@ module Flintlock
       handle_run(*Open3.capture3(@env, command))
     end
 
+    def detect_runtime(script)
+      raw = File.open(script, &:readline)[/^\s*#!\s*(.+)/, 1] || ""
+      raw.split
+    rescue EOFError
+      []
+    end
+
+    def empty_script?(script)
+      File.read(script).strip.empty?
+    end
+
+    def skip_script?(script)
+     skip = ! File.file?(script) || empty_script?(script)
+     @log.debug("skipping '#{script}'") if skip
+     skip
+    end
+
     def run_script(script, *args)
-      run(Shellwords.join([script, *args]))
+      return if skip_script?(script)
+      command = Shellwords.join([*detect_runtime(script), script, *args].compact)
+      @log.debug("running command: #{command}")
+      run(command)
     end
 
     def handle_run(stdout, stderr, status)
