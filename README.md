@@ -96,7 +96,8 @@ Currently ``flintlock`` can install modules from a number of sources:
 
 * From a local directory
 * From a local tarball (``tar`` or ``tar.gz``)
-* Over the ``git`` protocol
+* Over ``git`` supported protocols (``git://..``)
+* Over ``svn`` supported protocols (``svn://...``)
 * ``tar`` or ``tar.gz`` over ``http``/``https``
 
 Attempting to install any other way will throw an error message similar to the following:

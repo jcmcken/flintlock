@@ -50,6 +50,8 @@ module Flintlock
         end
       when 'git'
         handle_git_uri(uri)
+      when 'svn'
+        handle_svn_uri(uri)
       when 'http', 'https'
         raise UnsupportedModuleURI.new(uri) if ! Util.supported_archive?(uri)
         # over these protocols, we're getting an archive
@@ -68,7 +70,23 @@ module Flintlock
       root_dir = Dir.mktmpdir
       @tmpfiles << root_dir
       command = Shellwords.join(['git', 'clone', uri, root_dir])
+      @log.debug("running command: '#{command}'")
       stdout, stderr, status = Open3.capture3(command)
+      log_lines(stdout)
+      log_lines(stderr)
+      raise ModuleDownloadError, uri if status.exitstatus != 0 
+      root_dir
+    end
+
+    def handle_svn_uri(uri)
+      raise DependencyError.new('svn') if Util.which('svn').nil?
+      root_dir = Dir.mktmpdir
+      @tmpfiles << root_dir
+      command = Shellwords.join(['svn', 'checkout', uri, root_dir])
+      @log.debug("running command: '#{command}'")
+      stdout, stderr, status = Open3.capture3(command)
+      log_lines(stdout)
+      log_lines(stderr)
       raise ModuleDownloadError, uri if status.exitstatus != 0 
       root_dir
     end
@@ -228,11 +246,16 @@ module Flintlock
     end
 
     def handle_run(stdout, stderr, status)
-      stdout.lines.each { |x| @log.info(x) }
+      log_lines(stdout, :level => :info)
       if status.exitstatus != 0
-        stderr.lines.each { |x| @log.error(x) }
+        log_lines(stderr, :level => :error)
         raise RunFailure
       end
+    end
+
+    def log_lines(output, options={})
+      options[:level] ||= :debug
+      output.lines.each { |x| @log.send(options[:level], x) }
     end
   end
 end
