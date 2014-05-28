@@ -106,8 +106,12 @@ module Flintlock
       @metadata.full_name
     end
 
+    def self.stages
+      ['prepare', 'stage', 'start', 'modify']
+    end
+
     def self.script_names
-      ['defaults', 'modify', 'prepare', 'stage', 'start', 'stop']
+      ['defaults', *Module.stages, 'stop']
     end
 
     def scripts
