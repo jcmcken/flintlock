@@ -17,7 +17,7 @@ module Flintlock
       current_filename = filename.dup
       while true
         ext = File.extname(current_filename)
-        break if ext.empty?
+        break if ext.empty? || ext =~ /^\.\d+$/
         current_filename = current_filename.gsub(/#{ext}$/, '')
         data << ext
       end
