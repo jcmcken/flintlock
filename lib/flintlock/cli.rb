@@ -58,8 +58,14 @@ module Flintlock
     private
 
     def get_module(uri, options={})
-      begin
+      handle_exception do
         Flintlock::Module.new(uri, options)
+      end
+    end
+
+    def handle_exception(&block)
+      begin
+        result = block.call
       rescue InvalidModule => e
         abort("invalid flintlock module '#{e}'")
       rescue UnsupportedModuleURI => e
@@ -70,7 +76,10 @@ module Flintlock
         abort("missing dependency: no such command '#{e}'")
       rescue Interrupt
         abort("interrupted by user")
+      rescue PackagingError
+        abort("packaging failed!")
       end
+      result
     end
 
     def error(message)
