@@ -3,7 +3,8 @@
 - Fixed a bug with relative paths passed to the ``deploy`` command
 - Added the ``new`` subcommand, which generates an empty template module 
 - Fixed a few issues with the RPM spec file
-- Module scripts are now silently skipped if they don't exist or are empty.
+- Module scripts are now silently skipped if they don't exist or are empty
+  (rather than erroring out).
 - Fixed a bug where a ``/tmp`` filesystem mounted ``noexec`` would prevent 
   scripts from running.
 - Can now deploy from local tarballs
@@ -20,6 +21,8 @@
 - Added a new optional deployment stage called ``detect``. This script should be
   used to validate whether the module is appropriate for installation on the 
   current host.
+- Added a new ``defaults`` command, which prints out the default configuration
+  (from ``bin/defaults``) of the given module.
 
 # Version 0.1.0
 
