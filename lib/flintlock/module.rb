@@ -119,8 +119,10 @@ module Flintlock
       else
         raise UnsupportedModuleURI, filename
       end
-      _, _, status = Open3.capture3(Shellwords.join(command))
-      raise ModuleDownloadError if status.exitstatus != 0
+      stdout, stderr, status = Open3.capture3(Shellwords.join(command))
+      log_lines(stdout)
+      log_lines(stderr)
+      raise ModuleDownloadError, filename if status.exitstatus != 0
       tmpdir
     end
 
