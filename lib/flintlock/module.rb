@@ -23,21 +23,21 @@ module Flintlock
     def initialize(uri = nil, options={})
       # track temporary files and directories for deletion
       @tmpfiles = []
-     
+
       # destroy tmp files on exit 
       at_exit { handle_exit }
 
       @debug = !!options[:debug]
       @uri = uri || Dir.pwd
       @log = load_logger
-      @root_dir = download_from_uri(@uri)
+     
+      @root_dir = detect_root_dir(download_from_uri(@uri))
       @metadata = load_metadata
 
       load_scripts!
       validate
 
       @env = load_env(@defaults_script)
-
     end
 
     def download_from_uri(uri)
@@ -107,6 +107,7 @@ module Flintlock
     end
 
     def handle_archive(filename)
+      @log.debug("handling archive file '#{filename}'")
       tmpdir = Dir.mktmpdir
       @tmpfiles << tmpdir
       case filename
@@ -200,6 +201,7 @@ module Flintlock
     end
 
     def validate
+      @log.debug('validating module')
       raise InvalidModule.new(@uri) if ! valid?
     end
 
@@ -210,6 +212,7 @@ module Flintlock
     end
 
     def load_metadata
+      @log.debug('loading module metadata')
       begin
         Metadata.new(File.join(@root_dir, Metadata.filename)) 
       rescue Errno::ENOENT
@@ -257,5 +260,15 @@ module Flintlock
       options[:level] ||= :debug
       output.lines.each { |x| @log.send(options[:level], x) }
     end
+
+    def detect_root_dir(directory)
+      contents = Dir[File.join(directory, '*')] 
+      if contents.length == 1 && File.directory?(contents[0])
+        contents[0]
+      else
+        directory
+      end
+    end
+
   end
 end
