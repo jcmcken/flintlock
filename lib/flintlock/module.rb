@@ -135,7 +135,7 @@ module Flintlock
     end
 
     def self.stages
-      ['prepare', 'stage', 'start', 'modify']
+      ['detect', 'prepare', 'stage', 'start', 'modify']
     end
 
     def self.script_names
@@ -143,15 +143,16 @@ module Flintlock
     end
 
     def scripts
-      [@modify_script, @prepare_script, @stage_script, @start_script, @stop_script, @defaults_script]
-    end
-
-    def scripts_exist?
-      scripts.map { |x| File.file?(x) }.all?
+      [@modify_script, @prepare_script, @stage_script, @start_script, @stop_script, @defaults_script, @detect_script]
     end
 
     def valid?
-      @metadata.valid? && scripts_exist?
+      @metadata.valid?
+    end
+
+    def detect
+      @log.info("running detect stage: #{@detect_script}")
+      run_script(@detect_script)
     end
 
     def prepare
@@ -199,8 +200,8 @@ module Flintlock
       raise if ! Util.empty_directory?(app_dir)
     end
 
-    def self.package(directory)
-      mod = Module.new(directory)
+    def self.package(directory, options={})
+      mod = Module.new(directory, options)
       archive = mod.package_name + '.tar.gz'
       command = Shellwords.join(['tar', 'cfz', archive, directory])  
       stdout, stderr, status = Open3.capture3(command)
