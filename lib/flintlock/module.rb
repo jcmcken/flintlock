@@ -16,6 +16,7 @@ module Flintlock
   class ModuleDownloadError < RuntimeError; end
   class RunFailure < RuntimeError; end
   class DependencyError < RuntimeError; end
+  class PackagingError < RuntimeError; end
 
   class Module
     attr_reader :uri, :metadata
@@ -127,6 +128,10 @@ module Flintlock
       @metadata.full_name
     end
 
+    def package_name
+      @metadata.package_name
+    end
+
     def self.stages
       ['prepare', 'stage', 'start', 'modify']
     end
@@ -190,6 +195,15 @@ module Flintlock
     def create_app_dir(app_dir)
       FileUtils.mkdir_p(app_dir)
       raise if ! Util.empty_directory?(app_dir)
+    end
+
+    def self.package(directory)
+      mod = Module.new(directory)
+      archive = mod.package_name + '.tar.gz'
+      command = Shellwords.join(['tar', 'cfz', archive, directory])  
+      stdout, stderr, status = Open3.capture3(command)
+      raise PackagingError.new(directory) if status.exitstatus != 0
+      archive
     end
 
     private

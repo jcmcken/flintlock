@@ -55,6 +55,11 @@ module Flintlock
       end
     end
 
+    desc "package [DIRECTORY]", "Package up the given module directory"
+    def package(directory = Dir.pwd)
+      handle_exception { Module.package(directory) }
+    end
+
     private
 
     def get_module(uri, options={})
