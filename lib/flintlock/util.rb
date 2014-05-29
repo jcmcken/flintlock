@@ -31,5 +31,10 @@ module Flintlock
       end
       nil
     end
+
+    def self.get_uri_scheme(uri)
+      scheme = URI.parse(uri).scheme
+      return scheme.nil? ? nil : scheme.split('+', 0)[0] 
+    end
   end
 end
