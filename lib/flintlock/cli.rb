@@ -68,6 +68,14 @@ module Flintlock
       handle_exception { Module.package(directory, options) }
     end
 
+    desc "defaults MODULE", "Print the default configuration settings for MODULE"
+    def defaults(uri)
+      mod = get_module(uri)
+      mod.defaults.each do |k,v|
+        puts "#{k}=#{v}"
+      end
+    end
+
     private
 
     def get_module(uri, options={})

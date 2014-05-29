@@ -186,13 +186,17 @@ module Flintlock
 
     def load_env(defaults_script)
       # hokey, but seems to work
-      env_data = %x{set -a && source #{defaults_script} && env}.split.map{ |x| x.split('=', 2) }
+      env_data = %x{set -a && source #{defaults_script} && env}.split("\n").map{ |x| x.split('=', 2) }
       env = Hash[env_data]
       @log.debug("defaults script is #{defaults_script}")
       @log.debug("defaults env is #{env.inspect}")
       env = env.merge(current_env)
       @log.debug("merged env is #{env.inspect}")
       env
+    end
+
+    def defaults
+      Hash[@env.to_a - ENV.to_a] 
     end
 
     def create_app_dir(app_dir)
