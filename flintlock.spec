@@ -18,7 +18,7 @@ Requires: %{?scl_prefix}rubygem(thor)
 Requires: %{?scl_prefix}rubygem(json) 
 Requires: tar
 Requires: gzip
-BuildRequires: scl-utils-build
+%{?scl:BuildRequires: scl-utils-build}
 BuildRequires: %{?scl_prefix}ruby(abi) = %{rubyabi}
 BuildRequires: %{?scl_prefix}ruby(rubygems) 
 BuildRequires: %{?scl_prefix}rubygems-devel
@@ -50,7 +50,7 @@ mkdir -p %{buildroot}%{_bindir}
 cp -pa .%{_bindir}/* \
         %{buildroot}%{_bindir}/
 
-find %{buildroot}%{gem_instdir}/bin -type f | xargs chmod a+x
+find %{buildroot}%{gem_instdir}/bin -type f | xargs chmod a+rx
 find %{buildroot}%{gem_instdir}/lib -type f | xargs chmod ugo+r
 
 %if %{?scl:1}%{!?scl:0}
@@ -65,7 +65,7 @@ EOF
 %package -n flintlock
 Summary: A simple application deployer
 Group: Utilities
-Requires: %{?scl_prefix}rubygem(flintlock)
+Requires: %{?scl_prefix}rubygem(flintlock) =  %{version}
 
 %description -n flintlock
 A simple application deployer inspired by Heroku's buildpacks.
