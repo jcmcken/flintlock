@@ -44,6 +44,7 @@ files and directories to ``/some/empty/directory``. Let's see what happens:
 ```console
 $ flintlock deploy git://github.com/jcmcken/flintlock-redis.git /some/empty/directory
          run  fetching module
+         run  detecting compatibility
         info  deploying jcmcken/redis (0.0.1) to '/some/empty/directory'
       create  creating deploy directory
          run  installing and configuring dependencies
@@ -119,6 +120,7 @@ At its heart, a module has the following minimal layout:
 sample-app-1
 |-- bin
 |   |-- defaults
+|   |-- detect
 |   |-- modify
 |   |-- prepare
 |   |-- stage
@@ -132,8 +134,8 @@ generate this structure.
 
 The top-level directory (in this case, ``sample-app-1``) can be called anything. 
 
-The files under ``bin`` are executable scripts (using any language you care to use). All
-of these scripts must exist, but they need not do anything. More on these later.
+The files under ``bin`` are executable scripts (using any language you care to
+use). More on these later.
 
 The ``metadata.json`` file contains metadata about the module. This metadata looks as follows:
 
@@ -145,8 +147,9 @@ The ``metadata.json`` file contains metadata about the module. This metadata loo
 }
 ```
 
-All three keys (``author``, ``name``, ``version``) are required, but can be any value. These
-metadata are merely used to namespace the module.
+All three keys (``author``, ``name``, ``version``) are required, but can be any value
+(as long as they're not the empty string). These metadata are merely used to namespace 
+the module.
 
 ``flintlock`` developers can choose to include more files in their modules if needed.
 
@@ -159,6 +162,7 @@ These stages correspond directly to the scripts under ``bin/``.
 
 The most important stages, and their purpose, are as follows. (The stages occur in the order listed below)
 
+* ``detect``: Detect whether the module is compatible with the current host.
 * ``prepare``: Install or compile any required dependencies. This script takes no arguments.
 * ``stage``: Stage the application directories and files. This script takes a single argument,
   which is the directory where your app will be deployed. This directory need not exist, but if
