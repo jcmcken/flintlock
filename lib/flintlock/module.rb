@@ -1,6 +1,7 @@
 require 'flintlock/metadata'
 require 'flintlock/logger'
 require 'flintlock/util'
+require 'flintlock/runner'
 require 'open3'
 require 'fileutils'
 require 'logger'
@@ -28,12 +29,12 @@ module Flintlock
       # destroy tmp files on exit 
       at_exit { handle_exit }
 
-      @debug = !!options[:debug]
       @uri = uri || Dir.pwd
-      @log = load_logger
+      @log = Util.load_logger(!!options[:debug])
+      @runner = Runner.new(options)
      
       @root_dir = detect_root_dir(download_from_uri(@uri))
-      @metadata = load_metadata
+      @metadata = load_metadata(@root_dir)
 
       load_scripts!
       validate
@@ -70,12 +71,8 @@ module Flintlock
       raise DependencyError.new('git') if Util.which('git').nil?
       root_dir = Dir.mktmpdir
       @tmpfiles << root_dir
-      command = Shellwords.join(['git', 'clone', uri, root_dir])
-      @log.debug("running command: '#{command}'")
-      stdout, stderr, status = Open3.capture3(command)
-      log_lines(stdout)
-      log_lines(stderr)
-      raise ModuleDownloadError, uri if status.exitstatus != 0 
+      status = @runner.run(['git', 'clone', uri, root_dir])
+      raise ModuleDownloadError, uri if status != 0 
       root_dir
     end
 
@@ -83,12 +80,8 @@ module Flintlock
       raise DependencyError.new('svn') if Util.which('svn').nil?
       root_dir = Dir.mktmpdir
       @tmpfiles << root_dir
-      command = Shellwords.join(['svn', 'checkout', uri, root_dir])
-      @log.debug("running command: '#{command}'")
-      stdout, stderr, status = Open3.capture3(command)
-      log_lines(stdout)
-      log_lines(stderr)
-      raise ModuleDownloadError, uri if status.exitstatus != 0 
+      status = @runner.run(['svn', 'checkout', uri, root_dir])
+      raise ModuleDownloadError, uri if status != 0 
       root_dir
     end
 
@@ -119,10 +112,8 @@ module Flintlock
       else
         raise UnsupportedModuleURI, filename
       end
-      stdout, stderr, status = Open3.capture3(Shellwords.join(command))
-      log_lines(stdout)
-      log_lines(stderr)
-      raise ModuleDownloadError, filename if status.exitstatus != 0
+      status = @runner.run(command)
+      raise ModuleDownloadError, filename if status != 0
       tmpdir
     end
 
@@ -207,9 +198,8 @@ module Flintlock
     def self.package(directory, options={})
       mod = Module.new(directory, options)
       archive = mod.package_name + '.tar.gz'
-      command = Shellwords.join(['tar', 'cfz', archive, directory])  
-      stdout, stderr, status = Open3.capture3(command)
-      raise PackagingError.new(directory) if status.exitstatus != 0
+      status = @runner.run(['tar', 'cfz', archive, directory])  
+      raise PackagingError.new(directory) if status != 0
       archive
     end
 
@@ -226,16 +216,10 @@ module Flintlock
       raise InvalidModule.new(@uri) if ! valid?
     end
 
-    def load_logger
-      log = Logger.new(STDOUT)
-      log.silence! if ! @debug
-      log
-    end
-
-    def load_metadata
+    def load_metadata(root_dir)
       @log.debug('loading module metadata')
       begin
-        Metadata.new(File.join(@root_dir, Metadata.filename)) 
+        Metadata.new(File.join(root_dir, Metadata.filename)) 
       rescue Errno::ENOENT
         raise InvalidModule, uri
       end
@@ -264,22 +248,9 @@ module Flintlock
 
     def run_script(script, *args)
       return if skip_script?(script)
-      command = Shellwords.join([*detect_runtime(script), script, *args].compact)
-      @log.debug("running command: #{command}")
-      run(command)
-    end
-
-    def handle_run(stdout, stderr, status)
-      log_lines(stdout, :level => :info)
-      if status.exitstatus != 0
-        log_lines(stderr, :level => :error)
-        raise RunFailure
-      end
-    end
-
-    def log_lines(output, options={})
-      options[:level] ||= :debug
-      output.lines.each { |x| @log.send(options[:level], x) }
+      command = [*detect_runtime(script), script, *args].compact
+      status = @runner.run(command, :env => @env)
+      raise RunFailure if status != 0
     end
 
     def detect_root_dir(directory)

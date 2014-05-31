@@ -1,3 +1,5 @@
+require 'flintlock/logger'
+
 module Flintlock
   class Util
     def self.empty_directory?(directory)
@@ -35,6 +37,12 @@ module Flintlock
     def self.get_uri_scheme(uri)
       scheme = URI.parse(uri).scheme
       return scheme.nil? ? nil : scheme.split('+', 0)[0] 
+    end
+
+    def self.load_logger(debug = false)
+      log = Logger.new(STDOUT)
+      log.silence! if ! debug
+      log
     end
   end
 end
