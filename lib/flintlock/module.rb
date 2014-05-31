@@ -68,7 +68,8 @@ module Flintlock
     end
 
     def handle_git_uri(uri)
-      raise DependencyError.new('git') if Util.which('git').nil?
+      depends_on 'git'
+
       root_dir = Dir.mktmpdir
       @tmpfiles << root_dir
       status = @runner.run(['git', 'clone', uri, root_dir])
@@ -77,7 +78,8 @@ module Flintlock
     end
 
     def handle_svn_uri(uri)
-      raise DependencyError.new('svn') if Util.which('svn').nil?
+      depends_on 'svn'
+
       root_dir = Dir.mktmpdir
       @tmpfiles << root_dir
       status = @runner.run(['svn', 'checkout', uri, root_dir])
@@ -102,6 +104,9 @@ module Flintlock
 
     def handle_archive(filename)
       @log.debug("handling archive file '#{filename}'")
+
+      depends_on 'tar'
+
       tmpdir = Dir.mktmpdir
       @tmpfiles << tmpdir
       case filename
@@ -225,10 +230,6 @@ module Flintlock
       end
     end
 
-    def run(command)
-      handle_run(*Open3.capture3(@env, command))
-    end
-
     def detect_runtime(script)
       raw = File.open(script, &:readline)[/^\s*#!\s*(.+)/, 1] || ""
       raw.split
@@ -262,5 +263,8 @@ module Flintlock
       end
     end
 
+    def depends_on(what)
+      raise DependencyError.new(what) if Util.which(what).nil?
+    end
   end
 end
