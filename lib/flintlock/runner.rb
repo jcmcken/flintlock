@@ -25,7 +25,7 @@ module Flintlock
       stdout = rout.read
       stderr = rerr.read
 
-      @log.linewise(stdout)
+      @log.linewise(stdout, :level => :info)
       @log.linewise(stderr)
 
       return options[:capture] ? [stdout, stderr, status] : status 
