@@ -1,5 +1,6 @@
 require 'thor'
 require 'flintlock/module'
+require 'flintlock/version'
 
 module Flintlock
   class Cli < Thor
@@ -74,6 +75,11 @@ module Flintlock
       mod.defaults.each do |k,v|
         puts "#{k}=#{v}"
       end
+    end
+
+    desc "version", "Print version information"
+    def version
+      puts Flintlock::VERSION
     end
 
     private
