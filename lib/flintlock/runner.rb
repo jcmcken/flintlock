@@ -7,13 +7,28 @@ module Flintlock
     end
 
     def run(command, options={})
-      options[:capture] = !!options[:capture]
-      options[:env] = options.fetch(:env, {})
       @log.debug("running command: '#{command.inspect}'")
-      stdout, stderr, status = Open3.capture3(options[:env], Shellwords.join(command))
+
+      options[:capture] = !!options[:capture]
+      options[:env] = options.fetch(:env, ENV)
+
+      rout, wout = IO.pipe
+      rerr, werr = IO.pipe
+      pid = Process.spawn(options[:env], Shellwords.join(command), :out => wout, :err => werr)
+
+      Process.wait(pid)
+      status = $?.exitstatus
+
+      # capture stdout/stderr
+      wout.close
+      werr.close
+      stdout = rout.read
+      stderr = rerr.read
+
       @log.linewise(stdout)
       @log.linewise(stderr)
-      return options[:capture] ? [stdout, stderr, status.exitstatus] : status.exitstatus
+
+      return options[:capture] ? [stdout, stderr, status] : status 
     end
   end
 end
