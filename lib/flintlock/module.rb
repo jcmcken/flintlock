@@ -203,7 +203,7 @@ module Flintlock
     def self.package(directory, options={})
       mod = Module.new(directory, options)
       archive = mod.package_name + '.tar.gz'
-      status = @runner.run(['tar', 'cfz', archive, directory])  
+      status = Runner.new.run(['tar', 'cfz', archive, directory])
       raise PackagingError.new(directory) if status != 0
       archive
     end
