@@ -44,5 +44,13 @@ module Flintlock
       log.silence! if ! debug
       log
     end
+
+    def self.detect_runtime(script, default="/bin/sh")
+      raw = File.open(script, &:readline)[/^\s*#!\s*(.+)/, 1] || default
+      raw.split
+    rescue EOFError
+      [default]
+    end
+
   end
 end

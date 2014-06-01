@@ -230,13 +230,6 @@ module Flintlock
       end
     end
 
-    def detect_runtime(script)
-      raw = File.open(script, &:readline)[/^\s*#!\s*(.+)/, 1] || ""
-      raw.split
-    rescue EOFError
-      []
-    end
-
     def empty_script?(script)
       File.read(script).strip.empty?
     end
@@ -249,7 +242,7 @@ module Flintlock
 
     def run_script(script, *args)
       return if skip_script?(script)
-      command = [*detect_runtime(script), script, *args].compact
+      command = [*Util.detect_runtime(script), script, *args].compact
       status = @runner.run(command, :env => @env)
       raise RunFailure if status != 0
     end
