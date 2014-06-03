@@ -66,7 +66,7 @@ module Flintlock
     desc "package [DIRECTORY]", "Package up the given module directory"
     method_option :debug, :type => :boolean, :description => "enable debug output", :default => false
     def package(directory = Dir.pwd)
-      handle_exception { Module.package(directory, options) }
+      handle_exception { Module.package(directory, options.dup) }
     end
 
     desc "defaults MODULE", "Print the default configuration settings for MODULE"

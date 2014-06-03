@@ -52,5 +52,9 @@ module Flintlock
       [default]
     end
 
+    def self.path_split(path)
+      path.split(File::SEPARATOR).select { |x| ! x.empty? }
+    end
+
   end
 end
