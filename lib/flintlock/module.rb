@@ -213,7 +213,7 @@ module Flintlock
         archive_path = directory
       end
 
-      status = Runner.new.run(['tar', 'cfz', archive, '-C', change_to, archive_path], options)
+      status = Runner.new(options).run(['tar', 'cfz', archive, '-C', change_to, archive_path])
       raise PackagingError.new(directory) if status != 0
       archive
     end
