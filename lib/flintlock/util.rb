@@ -1,6 +1,8 @@
 require 'flintlock/logger'
 
 module Flintlock
+  class DependencyError < RuntimeError; end
+
   class Util
     def self.empty_directory?(directory)
       Dir[File.join(directory, '*')].empty?
@@ -56,5 +58,8 @@ module Flintlock
       path.split(File::SEPARATOR).select { |x| ! x.empty? }
     end
 
+    def self.depends_on(what)
+      raise DependencyError.new(what) if which(what).nil?
+    end
   end
 end

@@ -16,7 +16,6 @@ module Flintlock
   class UnsupportedModuleURI < RuntimeError; end
   class ModuleDownloadError < RuntimeError; end
   class RunFailure < RuntimeError; end
-  class DependencyError < RuntimeError; end
   class PackagingError < RuntimeError; end
 
   class Module
@@ -68,7 +67,7 @@ module Flintlock
     end
 
     def handle_git_uri(uri)
-      depends_on 'git'
+      Util.depends_on 'git'
 
       root_dir = Dir.mktmpdir
       @tmpfiles << root_dir
@@ -78,7 +77,7 @@ module Flintlock
     end
 
     def handle_svn_uri(uri)
-      depends_on 'svn'
+      Util.depends_on 'svn'
 
       root_dir = Dir.mktmpdir
       @tmpfiles << root_dir
@@ -105,7 +104,7 @@ module Flintlock
     def handle_archive(filename)
       @log.debug("handling archive file '#{filename}'")
 
-      depends_on 'tar'
+      Util.depends_on 'tar'
 
       tmpdir = Dir.mktmpdir
       @tmpfiles << tmpdir
@@ -201,9 +200,10 @@ module Flintlock
     end
 
     def self.package(directory, options={})
+      Util.depends_on 'tar'
+
       mod = Module.new(directory, options)
       archive = mod.package_name + '.tar.gz'
-
 
       if Util.path_split(directory).length > 1
         change_to = File.dirname(directory)
@@ -264,10 +264,6 @@ module Flintlock
       else
         directory
       end
-    end
-
-    def depends_on(what)
-      raise DependencyError.new(what) if Util.which(what).nil?
     end
   end
 end
