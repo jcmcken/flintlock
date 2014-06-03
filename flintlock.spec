@@ -18,6 +18,7 @@ Requires: %{?scl_prefix}rubygem(thor)
 Requires: %{?scl_prefix}rubygem(json) 
 Requires: tar
 Requires: gzip
+Requires: file
 %{?scl:BuildRequires: scl-utils-build}
 BuildRequires: %{?scl_prefix}ruby(abi) = %{rubyabi}
 BuildRequires: %{?scl_prefix}ruby(rubygems) 
