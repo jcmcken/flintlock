@@ -24,6 +24,7 @@
 - Support a wider array of module URIs (e.g. ``svn+ssh://...``)
 - Archives with root directories are now supported as valid module archives 
   (e.g. ``<archive_root>/<root_dir>/bin/*`` vs ``<archive_root>/bin/*`` layouts)
+- Archive detection now uses MIME hinting rather than filename hinting
 - Fixed a few issues with the RPM spec file
 
 # Version 0.1.0
