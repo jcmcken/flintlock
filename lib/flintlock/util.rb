@@ -8,14 +8,6 @@ module Flintlock
       Dir[File.join(directory, '*')].empty?
     end
   
-    def self.supported_archives
-      ['.tar.gz', '.tar']
-    end
-  
-    def self.supported_archive?(filename)
-      Util.supported_archives.include?(full_extname(filename))
-    end
-  
     def self.full_extname(filename)
       data = []
       current_filename = filename.dup
@@ -60,6 +52,12 @@ module Flintlock
 
     def self.depends_on(what)
       raise DependencyError.new(what) if which(what).nil?
+    end
+
+    def self.mime_type(filename)
+      depends_on 'file'
+      stdout, stderr, status = Runner.new.run(['file', '--mime-type', filename], :capture => true) 
+      stdout.split(':')[1].strip
     end
   end
 end

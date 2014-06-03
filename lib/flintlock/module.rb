@@ -44,19 +44,14 @@ module Flintlock
     def download_from_uri(uri)
       case Util.get_uri_scheme(uri)
       when nil, 'file' # no scheme == local file
-        if Util.supported_archive?(uri)
-          handle_archive(uri)
-        else
-          uri
-        end
+        handle_file(uri)
       when 'git'
         handle_git_uri(uri)
       when 'svn'
         handle_svn_uri(uri)
       when 'http', 'https'
-        raise UnsupportedModuleURI.new(uri) if ! Util.supported_archive?(uri)
         # over these protocols, we're getting an archive
-        handle_archive(handle_http_uri(uri))
+        handle_file(handle_http_uri(uri))
       else
         raise UnsupportedModuleURI, uri
       end
@@ -97,21 +92,26 @@ module Flintlock
         end
       end
       tmpfile
-    rescue OpenURI::HTTPError
+    rescue OpenURI::HTTPError, OpenSSL::SSL::SSLError
       raise ModuleDownloadError, uri
     end
 
-    def handle_archive(filename)
-      @log.debug("handling archive file '#{filename}'")
-
+    def handle_file(filename)
+      @log.debug("handling file '#{filename}'")
       Util.depends_on 'tar'
 
       tmpdir = Dir.mktmpdir
       @tmpfiles << tmpdir
-      case filename
-      when /\.tar\.gz$/
+
+      mime = Util.mime_type(filename)
+      @log.debug("mime-type is '#{mime}'")
+
+      case mime 
+      when 'application/x-directory'
+        return filename
+      when 'application/x-gzip'
         command = ['tar', 'xfz', filename, '-C', tmpdir]
-      when /\.tar$/
+      when 'application/x-tar'
         command = ['tar', 'xf', filename, '-C', tmpdir]
       else
         raise UnsupportedModuleURI, filename
