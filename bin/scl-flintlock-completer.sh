@@ -1,5 +1,5 @@
 #!/bin/bash
 
-completer=$(scl enable ruby193 "which flintlock-completer")
+COMPLETER="bash -c 'scl enable ruby193 flintlock-completer'"
 
-complete -o default -C $completer flintlock
+complete -o default -C "$COMPLETER" flintlock
