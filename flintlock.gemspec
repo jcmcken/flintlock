@@ -11,8 +11,8 @@ Gem::Specification.new do |gem|
   gem.homepage = 'https://github.com/jcmcken/flintlock'
   gem.license = 'MIT'
 
-  gem.files = Dir['lib/**/*'] + ['LICENSE', 'README.md', 'CHANGES.md']
-  gem.executables = ['flintlock']
+  gem.files = Dir['lib/**/*'] + ['LICENSE', 'README.md', 'CHANGES.md'] + Dir['bin/scl-*sh']
+  gem.executables = ['flintlock', 'flintlock-completer']
   gem.require_paths = ['lib']  
 
   gem.required_ruby_version = '>= 1.9.3'

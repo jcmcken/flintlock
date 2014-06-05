@@ -55,13 +55,11 @@ cp -pa .%{_bindir}/* \
 find %{buildroot}%{gem_instdir}/bin -type f | xargs chmod a+rx
 find %{buildroot}%{gem_instdir}/lib -type f | xargs chmod ugo+r
 
-%if %{?scl:1}%{!?scl:0}
+%if %{in_scl}
 mkdir -p %{buildroot}%{_root_bindir}
-cat << EOF > %{buildroot}%{_root_bindir}/flintlock
-#!/bin/bash
-
-scl enable ruby193 "flintlock \$*"
-EOF
+mkdir -p %{buildroot}%{_root_sysconfdir}/bash_completion.d
+ln -sf %{gem_instdir}/bin/scl-flintlock.sh %{buildroot}%{_root_bindir}/flintlock
+ln -sf %{gem_instdir}/bin/scl-flintlock-completer.sh %{buildroot}%{_root_sysconfdir}/bash_completion.d/flintlock.sh
 %endif
 
 %package -n flintlock
@@ -82,8 +80,9 @@ Documentation for %{pkg_name}
 
 
 %files -n flintlock
-%if %{?scl:1}%{!?scl:0}
+%if %{in_scl}
 %attr(0755,root,root) %{_root_bindir}/flintlock
+%attr(0755, root, root) %{_root_sysconfdir}/bash_completion.d/flintlock.sh
 %endif
 
 %files doc
@@ -92,6 +91,7 @@ Documentation for %{pkg_name}
 %files
 %dir %{gem_instdir}
 %attr(0755, root,root) %{_bindir}/flintlock
+%attr(0755, root,root) %{_bindir}/flintlock-completer
 %{gem_instdir}/bin
 %{gem_instdir}/lib
 %exclude %{gem_dir}/cache/%{gem_name}-%{version}.gem
