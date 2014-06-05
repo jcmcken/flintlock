@@ -1,12 +1,13 @@
 %global gem_name flintlock
 %global rubyabi 1.9.1
+%global in_scl %{?scl:1}%{!?scl:0}
 
 %{?scl:%scl_package rubygem-%{gem_name}}
 %{!?scl:%global pkg_name %{name}}
 
 Summary: A simple application deployer
 Name: %{?scl_prefix}rubygem-%{gem_name}
-Version: 0.2.0
+Version: 0.3.0
 Release: 1%{?dist}
 Group: Development/Languages
 License: MIT
