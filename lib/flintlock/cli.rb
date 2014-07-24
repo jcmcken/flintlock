@@ -6,10 +6,12 @@ module Flintlock
   class Cli < Thor
     include Thor::Actions
 
+    method_option :debug, :type => :boolean, :desc => "Enable debug output", :default => false
+    def initialize(*args); super; end
+
     desc "deploy MODULE DIRECTORY", "Deploy a flintlock module MODULE to DIRECTORY"
-    method_option :debug, :type => :boolean, :description => "enable debug output", :default => false
     method_option :halt, :type => :string, :banner => 'STAGE', 
-                  :description => "Halt after STAGE", :enum => ['fetch', 'detect', 'prepare', 'stage', 'start', 'modify']
+                  :desc => "Halt after STAGE", :enum => ['fetch', 'detect', 'prepare', 'stage', 'start', 'modify']
     def deploy(uri, app_dir)
       app_dir = File.expand_path(app_dir)
       say_status "run", "fetching module", :magenta
@@ -64,7 +66,6 @@ module Flintlock
     end
 
     desc "package [DIRECTORY]", "Package up the given module directory"
-    method_option :debug, :type => :boolean, :description => "enable debug output", :default => false
     def package(directory = Dir.pwd)
       handle_exception { Module.package(directory, options.dup) }
     end
