@@ -59,5 +59,10 @@ module Flintlock
       stdout, stderr, status = Runner.new.run(['file', '--mime-type', filename], :capture => true) 
       stdout.split(':')[1].strip
     end
+
+    def self.load_script_env(script)
+      env_data = %x{set -a && source #{script} && env}.split("\n").map{ |x| x.split('=', 2) }
+      env = Hash[env_data]
+    end
   end
 end
