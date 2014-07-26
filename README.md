@@ -33,7 +33,7 @@ You'll also need ``git``.
 After installing ``flintlock``, run the following:
 
 ```console
-flintlock deploy git://github.com/jcmcken/flintlock-redis.git /some/empty/directory
+$ flintlock deploy git://github.com/jcmcken/flintlock-redis.git /some/empty/directory
 ```
 
 In this case, the ``deploy`` command will recognize that you want to deploy from ``git``.
@@ -203,7 +203,7 @@ PORT=80
 The user can override this at the command line by running:
 
 ```console
-PORT=8080 flintlock deploy <module> <deploy_dir>
+$ PORT=8080 flintlock deploy <module> <deploy_dir>
 ```
 
 ``flintlock`` will transparently override the default ``PORT`` with the env var passed at the
