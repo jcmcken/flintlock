@@ -51,6 +51,7 @@ $ flintlock deploy git://github.com/jcmcken/flintlock-redis.git /some/empty/dire
       create  staging application files
          run  launching the application
          run  altering application runtime environment
+         run  verifying the app is still up
         info  complete!
 $
 ```
@@ -70,7 +71,11 @@ Let's take a look at the deploy directory, ``/some/empty/directory``:
 $ tree /some/empty/directory
 /some/empty/directory
 |-- bin
-|   `-- redis
+|   |-- defaults
+|   |-- redis
+|   |-- start
+|   |-- status
+|   `-- stop
 |-- data
 |-- etc
 |   `-- redis.conf
@@ -90,6 +95,10 @@ directory. This is a central tenet of ``flintlock``:
 How well an application adheres to this philosophy depends on the application. For instance,
 some applications may not have configurable ``/tmp`` directories. For transient data, this
 is usually acceptable. But all of the important files should really be located together.
+
+As a simple example, consider a Java application. On Linux, Java will store temporary files
+at ``/tmp``. You can override this with the system property ``java.io.tmpdir``, e.g.
+``java -Djava.io.tmpdir=/path/to/tmpdir ...etc...``.
 
 ## Supported Formats
 
@@ -125,6 +134,7 @@ sample-app-1
 |   |-- prepare
 |   |-- stage
 |   |-- start
+|   |-- status
 |   `-- stop
 `-- metadata.json
 ```
@@ -152,11 +162,13 @@ All three keys (``author``, ``name``, ``version``) are required, but can be any 
 the module.
 
 ``flintlock`` developers can choose to include more files in their modules if needed.
+For example, you may want to create a directory called ``artifacts`` which contains
+non-``flintlock`` files that you're going to stage with the application.
 
 ### Stages
 
 ``flintlock`` has different "stages" of execution that occur in a specific order every time
-you run a deployment.
+you run a ``deploy``.
 
 These stages correspond directly to the scripts under ``bin/``.
 
@@ -166,12 +178,15 @@ The most important stages, and their purpose, are as follows. (The stages occur 
 * ``prepare``: Install or compile any required dependencies. This script takes no arguments.
 * ``stage``: Stage the application directories and files. This script takes a single argument,
   which is the directory where your app will be deployed. This directory need not exist, but if
-  it does, it must be empty.
-* ``start``: Start the application. This script takes the same argument passed to ``stage``.
+  it does, it must be empty. 
+* ``start``: Start the application. This script takes no arguments.
 * ``modify``: Once the application is started, perform some runtime modifications. For instance,
   if you've just started a MySQL server, you may want to remove the default tables or add a 
-  password to the database superuser. This script takes the same argument passed to ``stage``
-  and ``start``.
+  password to the database superuser. This script takes a single argument, which is the directory
+  where your app will be deployed.
+* ``status``: Determine if the application is running. This is the final stage. This script 
+  takes no arguments. If the script's exit code is ``0``, ``flintlock`` assumes the app is
+  running. If the exit code is not ``0``, ``flintlock`` assumes the app is stopped.
 
 The API between these scripts and ``flintlock`` is as follows:
 
@@ -208,6 +223,80 @@ $ PORT=8080 flintlock deploy <module> <deploy_dir>
 
 ``flintlock`` will transparently override the default ``PORT`` with the env var passed at the
 command line.
+
+Alternatively, you can populate ``defaults`` scripts and just ``source`` them as needed. 
+For example:
+
+```console
+$ source dev-defaults.sh
+$ flintlock deploy <module> /path/to/dev-app
+...snip...
+$ source prod-defaults.sh
+$ flintlock deploy <module> /path/to/prod-app
+...snip...
+```
+
+### Deployment Integrity
+
+In addition to a framework for deploying applications, ``flintlock`` also provides
+facilities for verifying the integrity of each deployment. While these facilities
+do not provide cryptographic integrity (yet), they do provide a convenient way
+of encouraging good deployment practices.
+
+To verify a particular deployment, simply run the following:
+
+```console
+$ flintlock diff /path/to/deployment
+``` 
+
+If this prints nothing, that means your deployment has not been altered. Otherwise,
+a unified diff will be printing showing the changes that have been made.
+
+How does this work? 
+
+Under the hood, during the ``stage`` stage of a deployment, ``flintlock`` stores every
+staged file in content-addressable storage (CAS) on the filesystem. CAS is a storage
+mechanism whereby files are identified by a checksum representing their content rather
+than by file name.
+
+In the case of ``flintlock``, every staged file has its SHA256 checksum computed and
+its content stored in the CAS. ``flintlock`` then generates a manifest containing the
+list of files and their checksums. 
+
+When you run a ``flintlock diff``, this manifest is examined and verified against the 
+corresponding files in the CAS. It then prints the differences between what ``flintlock``
+deployed and what exists currently within the deployment directory.
+
+Keep in mind that the purpose of these facilities is not to absolutely prevent bad 
+behavior -- it's relatively trivial to defeat these protections. Instead, the purpose
+is to make it easy to catch yourself in bad habits. Having deterministic, well-defined
+deployments is for the benefit of you, the user, not of the tool itself.
+
+### Deployment Philosophy
+
+``flintlock`` attempts to encourage good behavior in application deployments. In
+particular, that: 
+
+* Deployments should have a consistent structure.
+* Deployments should be configurable, not static.
+* Deployments should be self-contained.
+* Deployments should be reproducible and repeatable by anyone, assuming they meet
+  the requirements for a particular module (e.g. the ``detect`` script).
+* Deployments should be shareable.
+* Deployments should be immutable.
+* Deployments should be verifiable.
+
+Although users have full flexibility to use the tool however they want, the following 
+practices should be shunned and vilified:
+
+* Manually altering an application deployment by hand. In other words, running ``flintlock deploy``
+  to launch an app, and then going in and manually re-configuring it. This just violates the entire
+  purpose of the tool. You might as well just distribute your app in a tarball if you're going to
+  do this.
+* Trying to circumvent or misuse ``flintlock``'s workflow. Application deployments should be
+  self-contained. You should not be trying to start app ``A`` from the ``start`` script of app
+  ``B``. App ``A`` should never have any direct knowledge of anything except itself. If you 
+  have some dependency between two applications, manage this externally.
 
 ### Examples
 

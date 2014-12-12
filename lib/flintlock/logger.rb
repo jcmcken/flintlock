@@ -15,4 +15,7 @@ module Flintlock
       output.lines.each { |x| send(options[:level], x) }
     end
   end
+
+  LOG = Logger.new(STDOUT)
+  LOG.silence!
 end

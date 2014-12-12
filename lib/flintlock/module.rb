@@ -2,6 +2,8 @@ require 'flintlock/metadata'
 require 'flintlock/logger'
 require 'flintlock/util'
 require 'flintlock/runner'
+require 'flintlock/storage'
+require 'flintlock/error'
 require 'open3'
 require 'fileutils'
 require 'logger'
@@ -10,16 +12,12 @@ require 'uri'
 require 'tmpdir'
 require 'tempfile'
 require 'open-uri'
+require 'yaml'
+require 'fileutils'
 
 module Flintlock
-  class InvalidModule < RuntimeError; end
-  class UnsupportedModuleURI < RuntimeError; end
-  class ModuleDownloadError < RuntimeError; end
-  class RunFailure < RuntimeError; end
-  class PackagingError < RuntimeError; end
-
   class Module
-    attr_reader :uri, :metadata
+    attr_reader :uri, :metadata, :root_dir
 
     def initialize(uri = nil, options={})
       # track temporary files and directories for deletion
@@ -28,20 +26,92 @@ module Flintlock
       # destroy tmp files on exit 
       at_exit { handle_exit }
 
+      @options = options
       @uri = uri || Dir.pwd
-      @log = Util.load_logger(!!options[:debug])
-      @runner = Runner.new(options)
-     
-      @root_dir = detect_root_dir(download_from_uri(@uri))
+
+      # use base runner initially for downloading the module
+      @runner = Runner.new
+    end
+
+    def loaded?
+      @loaded
+    end
+
+    def load!
+      @root_dir = fetch
       @metadata = load_metadata(@root_dir)
 
-      load_scripts!
+      @detect_script = File.join(@root_dir, 'bin', 'detect')
+      @prepare_script = File.join(@root_dir, 'bin', 'prepare')
+      @defaults_script = File.join(@root_dir, 'bin', 'defaults')
+      @stage_script = File.join(@root_dir, 'bin', 'stage')
+      @modify_script = File.join(@root_dir, 'bin', 'modify')
+      @start_script = File.join(@root_dir, 'bin', 'start')
+      @stop_script = File.join(@root_dir, 'bin', 'stop')
+      @status_script = File.join(@root_dir, 'bin', 'status')
+      
       validate
 
-      @env = load_env(@defaults_script)
+      @loaded = true
+
+      # module's now loaded, use env runner
+      @runner = EnvRunner.new(@defaults_script)
+      @loaded
+    end
+
+    def fetch
+      detect_root_dir(download_from_uri(@uri))
+    end
+
+    def create_dir(app_dir)
+      FileUtils.mkdir_p(app_dir)
+      raise if ! Util.empty_directory?(app_dir)
+    end
+
+    def detect
+      LOG.info("running detect stage: #{@detect_script}")
+      @runner.run(@detect_script)
+      LOG.info('completed detect stage') 
+    end
+
+    def prepare
+      LOG.info("running prepare stage: #{@prepare_script}")
+      @runner.run(@prepare_script)
+      LOG.info('completed prepare stage') 
+    end
+
+    def stage(app_dir)
+      LOG.info("running stage stage: #{@stage_script}")
+      module_stage(app_dir) # run internal staging procedures first
+      # now run user staging procedures
+      @runner.run(@stage_script, app_dir)
+      # generated manifest based on staged files
+      app = Application.new(app_dir, @options)
+      app.initialize_manifest
+      LOG.info('completed stage stage') 
+    end
+
+    def modify(app_dir)
+      LOG.info("running modify stage: #{@modify_script}")
+      @runner.run(@modify_script, app_dir)
+      LOG.info('completed modify stage') 
+    end
+
+    def defaults
+      @runner.defaults 
+    end
+
+    def module_stage(app_dir)
+      LOG.info('staging flintlock scripts') 
+      bindir = File.join(app_dir, 'bin')
+      FileUtils.mkdir_p(bindir)
+      [@defaults_script, @start_script, @stop_script, @status_script].each do |script|
+        FileUtils.cp(script, bindir, :preserve => true)
+      end
     end
 
     def download_from_uri(uri)
+      LOG.debug("downloading module from #{uri}")
       case Util.get_uri_scheme(uri)
       when nil, 'file' # no scheme == local file
         handle_file(uri)
@@ -97,14 +167,14 @@ module Flintlock
     end
 
     def handle_file(filename)
-      @log.debug("handling file '#{filename}'")
+      LOG.debug("handling file '#{filename}'")
       Util.depends_on 'tar'
 
       tmpdir = Dir.mktmpdir
       @tmpfiles << tmpdir
 
       mime = Util.mime_type(filename)
-      @log.debug("mime-type is '#{mime}'")
+      LOG.debug("mime-type is '#{mime}'")
 
       case mime 
       when 'application/x-directory'
@@ -121,6 +191,10 @@ module Flintlock
       tmpdir
     end
 
+    def create_deployment(app_dir)
+      Deployment.new(self, app_dir, @options)
+    end
+    
     def full_name
       @metadata.full_name
     end
@@ -130,77 +204,36 @@ module Flintlock
     end
 
     def self.stages
-      ['detect', 'prepare', 'stage', 'start', 'modify']
+      ['detect', 'prepare', 'stage', 'start', 'modify', 'status']
     end
 
     def self.script_names
       ['defaults', *Module.stages, 'stop']
     end
 
-    def scripts
-      [@modify_script, @prepare_script, @stage_script, @start_script, @stop_script, @defaults_script, @detect_script]
+    def errors
+      errors = Array.new
+      errors << "invalid metadata" if ! @metadata.valid?
+      Module.script_names.each do |script|
+        errors << "missing script '#{script}'" if ! File.file?(File.join(@root_dir, 'bin', script))
+      end
+      errors
     end
 
-    def valid?
-      @metadata.valid?
-    end
-
-    def detect
-      @log.info("running detect stage: #{@detect_script}")
-      run_script(@detect_script)
-    end
-
-    def prepare
-      @log.info("running prepare stage: #{@prepare_script}")
-      run_script(@prepare_script)
-    end
-
-    def stage(app_dir)
-      @log.info("running stage stage: #{@stage_script}")
-      run_script(@stage_script, app_dir)
-    end
-    
-    def modify(app_dir)
-      @log.info("running modify stage: #{@modify_script}")
-      run_script(@modify_script, app_dir)
-    end
-  
-    def start(app_dir)
-      @log.info("running start stage: #{@start_script}")
-      run_script(@start_script, app_dir)
-    end
-    
-    def stop(app_dir)
-      @log.info("running stop stage: #{@stop_script}")
-      run_script(@stop_script, app_dir)
-    end
-
-    def current_env
-      Hash[ENV.to_a] # get rid of ENV obj
-    end
-
-    def load_env(defaults_script)
-      env = Util.load_script_env(defaults_script)
-      @log.debug("defaults script is #{defaults_script}")
-      @log.debug("defaults env is #{env.inspect}")
-      env = env.merge(current_env)
-      @log.debug("merged env is #{env.inspect}")
-      env
-    end
-
-    def defaults
-      Hash[@env.to_a - ENV.to_a] 
-    end
-
-    def create_app_dir(app_dir)
-      FileUtils.mkdir_p(app_dir)
-      raise if ! Util.empty_directory?(app_dir)
+    def detect_root_dir(directory)
+      contents = Dir[File.join(directory, '*')] 
+      if contents.length == 1 && File.directory?(contents[0])
+        contents[0]
+      else
+        directory
+      end
     end
 
     def self.package(directory, options={})
       Util.depends_on 'tar'
 
       mod = Module.new(directory, options)
+      mod.load!
       archive = mod.package_name + '.tar.gz'
 
       if Util.path_split(directory).length > 1
@@ -218,49 +251,21 @@ module Flintlock
 
     private
 
-    def load_scripts!
-      Module.script_names.map do |x|
-        instance_variable_set("@#{x}_script".to_sym, File.join(@root_dir, 'bin', x))
+    def validate
+      LOG.debug('validating module')
+      e = errors
+      if ! e.empty?
+        e.each { |error| LOG.error(error) }
+        raise InvalidModule.new(@uri)
       end
     end
 
-    def validate
-      @log.debug('validating module')
-      raise InvalidModule.new(@uri) if ! valid?
-    end
-
     def load_metadata(root_dir)
-      @log.debug('loading module metadata')
+      LOG.debug('loading module metadata')
       begin
         Metadata.new(File.join(root_dir, Metadata.filename)) 
       rescue Errno::ENOENT
         raise InvalidModule, uri
-      end
-    end
-
-    def empty_script?(script)
-      File.read(script).strip.empty?
-    end
-
-    def skip_script?(script)
-     skip = ! File.file?(script) || empty_script?(script)
-     @log.debug("skipping '#{script}'") if skip
-     skip
-    end
-
-    def run_script(script, *args)
-      return if skip_script?(script)
-      command = [*Util.detect_runtime(script), script, *args].compact
-      status = @runner.run(command, :env => @env)
-      raise RunFailure if status != 0
-    end
-
-    def detect_root_dir(directory)
-      contents = Dir[File.join(directory, '*')] 
-      if contents.length == 1 && File.directory?(contents[0])
-        contents[0]
-      else
-        directory
       end
     end
   end

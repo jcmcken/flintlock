@@ -1,13 +1,17 @@
 require 'thor'
 require 'flintlock/module'
 require 'flintlock/version'
+require 'flintlock/application'
 
 module Flintlock
   class Cli < Thor
     include Thor::Actions
 
     method_option :debug, :type => :boolean, :desc => "Enable debug output", :default => false
-    def initialize(*args); super; end
+    def initialize(*args)
+      super
+      LOG.unsilence! if options[:debug]
+    end
 
     desc "deploy MODULE DIRECTORY", "Deploy a flintlock module MODULE to DIRECTORY"
     method_option :halt, :type => :string, :banner => 'STAGE', 
@@ -15,7 +19,9 @@ module Flintlock
     def deploy(uri, app_dir)
       app_dir = File.expand_path(app_dir)
       say_status "run", "fetching module", :magenta
-      mod = get_module(uri, options)
+      mod = Flintlock::Module.new(uri, options)
+      handle_exception { mod.load! }
+
       return if options[:halt] == 'fetch'
 
       begin
@@ -25,7 +31,7 @@ module Flintlock
 
         say_status "info", "deploying #{mod.full_name} to '#{app_dir}'", :blue
         say_status "create", "creating deploy directory"
-        mod.create_app_dir(app_dir) rescue abort("deploy directory is not empty")
+        mod.create_dir(app_dir) rescue abort("deploy directory is not empty")
         say_status "run", "installing and configuring dependencies", :magenta
         mod.prepare
         return if options[:halt] == 'prepare'
@@ -34,13 +40,18 @@ module Flintlock
         mod.stage(app_dir)
         return if options[:halt] == 'stage'
 
+        app = Application.new(app_dir, options)
+
         say_status "run", "launching the application", :magenta
-        mod.start(app_dir)
+        app.start
         return if options[:halt] == 'start'
 
         say_status "run", "altering application runtime environment", :magenta
-        mod.modify(app_dir)
+        mod.modify(app.dir)
         return if options[:halt] == 'modify'
+
+        say_status "run", "verifying the app is still up", :magenta
+        abort('app crashed!') if ! app.status
 
         say_status "info", "complete!", :blue
       rescue Errno::EACCES => e
@@ -65,6 +76,55 @@ module Flintlock
       end
     end
 
+    desc "start [DIRECTORY]", "Start the application at DIRECTORY"
+    def start(directory = Dir.pwd)
+      check_app(directory)
+      
+      app = Application.new(directory, options)
+      app.start
+    end
+
+    desc "stop [DIRECTORY]", "Stop the application at DIRECTORY"
+    def stop(directory = Dir.pwd)
+      check_app(directory)
+      
+      app = Application.new(directory, options)
+      app.stop
+    end
+
+    desc "restart [DIRECTORY]", "Restart the application at DIRECTORY"
+    def restart(directory = Dir.pwd)
+      check_app(directory)
+      
+      app = Application.new(directory, options)
+      abort('failed to restart app') if ! app.restart
+    end
+
+    desc "status [DIRECTORY]", "Determine whether the application at DIRECTORY is running"
+    def status(directory = Dir.pwd)
+      check_app(directory)
+      
+      app = Application.new(directory, options)
+      if app.status
+        puts 'running'
+      else
+        puts 'stopped'
+        exit 1
+      end 
+    end
+
+    desc "diff [DIRECTORY]", "Verify the integrity of the application deployed to DIRECTORY"
+    def diff(directory = Dir.pwd)
+      check_app(directory)
+      
+      app = Application.new(directory, options)
+      diff = app.diff 
+      if ! diff.empty?
+        puts diff
+        exit 1
+      end
+    end
+
     desc "package [DIRECTORY]", "Package up the given module directory"
     def package(directory = Dir.pwd)
       handle_exception { Module.package(directory, options.dup) }
@@ -72,10 +132,24 @@ module Flintlock
 
     desc "defaults MODULE", "Print the default configuration settings for MODULE"
     def defaults(uri)
-      mod = get_module(uri)
+      mod = Flintlock::Module.new(uri, options) 
+      handle_exception { mod.load! }
       mod.defaults.each do |k,v|
         puts "#{k}=#{v}"
       end
+    end
+
+    desc "gc", "Perform garbage collection"
+    def gc
+      storage = Storage.new
+      storage.gc
+    end
+    
+    desc "destroy [DIRECTORY]", "Stop and destroy the application at DIRECTORY"
+    def destroy(directory = Dir.pwd)
+      check_app(directory)
+      app = Application.new(directory, options)
+      app.destroy
     end
 
     desc "version", "Print version information"
@@ -85,9 +159,10 @@ module Flintlock
 
     private
 
-    def get_module(uri, options={})
-      handle_exception do
-        Flintlock::Module.new(uri, options)
+    def check_app(directory)
+      dir = File.expand_path(directory)
+      if ! Application.is_app?(dir, options)
+        abort("'#{dir}' doesn't look like a valid flintlock deployment") 
       end
     end
 
